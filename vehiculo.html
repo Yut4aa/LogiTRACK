@@ -19,15 +19,12 @@
             border: 1px solid #eee;
             border-radius: 8px;
             margin-bottom: 10px;
-            
-            /* Prepara el item para una transición suave */
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         
-        /* Efecto hover actualizado (sin fondo blanco) */
         .document-item:hover {
-            transform: translateY(-3px); /* Efecto de "levantar" */
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08); /* Sombra sutil */
+            transform: translateY(-3px); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
 
         .document-item img {
@@ -36,10 +33,9 @@
             border-radius: 4px;
         }
         
-        /* Espaciado aumentado */
         .document-item-info {
             flex-grow: 1;
-            margin-left: 20px; /* Aumentado de 15px a 20px */
+            margin-left: 20px; 
         }
         
         .download-link {
@@ -53,6 +49,44 @@
             border-radius: 5px;
             font-size: 0.9em;
         }
+
+        /* ==== ESTILOS NUEVOS PARA FILTROS ==== */
+        .filter-controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 15px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #555;
+            font-weight: 500;
+        }
+        .filter-btn:hover {
+            background-color: #e0e0e0;
+        }
+        .filter-btn.active {
+            background-color: var(--primary-color, #007bff);
+            color: white;
+            border-color: var(--primary-color, #007bff);
+        }
+        .filter-btn.active i {
+            color: white !important;
+        }
+        .filter-btn i {
+            width: 16px;
+            height: 16px;
+        }
+        /* ==== FIN DE ESTILOS NUEVOS ==== */
+
     </style>
 </head>
 <body>
@@ -69,6 +103,18 @@
         <hr>
 
         <h3>Documentos Asociados</h3>
+
+        <div class="filter-controls">
+            <button id="filter-all" class="filter-btn active" onclick="filterDocuments('all')">
+                <i data-feather="list"></i> Todos
+            </button>
+            <button id="filter-factura" class="filter-btn" onclick="filterDocuments('Factura')">
+                <i data-feather="file-text"></i> Facturas
+            </button>
+            <button id="filter-devolucion" class="filter-btn" onclick="filterDocuments('Devolución')">
+                <i data-feather="corner-up-left"></i> Devoluciones
+            </button>
+        </div>
         <div id="documents-container" class="document-list">
             </div>
         
@@ -78,15 +124,86 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // Variable global para guardar todos los documentos de este camión
+        let allTruckDocuments = [];
+        const documentsContainer = document.getElementById('documents-container');
+
+        /**
+         * Filtra y renderiza los documentos en la lista
+         * @param {string} filterType ('all', 'Factura', 'Devolución')
+         */
+        function filterDocuments(filterType) {
+            
+            // 1. Actualizar botones activos
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Construir el ID del botón
+            let btnId = `filter-all`;
+            if (filterType === 'Factura') {
+                btnId = `filter-factura`;
+            } else if (filterType === 'Devolución') {
+                btnId = `filter-devolucion`;
+            }
+            
+            const activeBtn = document.getElementById(btnId);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+
+            // 2. Filtrar documentos
+            const filteredDocuments = (filterType === 'all')
+                ? allTruckDocuments
+                : allTruckDocuments.filter(doc => doc.type === filterType);
+
+            // 3. Renderizar
+            if (filteredDocuments.length === 0) {
+                documentsContainer.innerHTML = '<p>No se encontraron documentos de este tipo.</p>';
+                return;
+            }
+
+            // Ordenar por fecha (más reciente primero)
+            filteredDocuments.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            documentsContainer.innerHTML = filteredDocuments.map(doc => {
+                const docDate = new Date(doc.date);
+                const formattedDate = docDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const formattedTime = docDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const fileName = `doc_${doc.plate}_${docDate.toISOString().split('T')[0]}.png`;
+
+                // Usamos el 'doc.type' guardado
+                const docTypeDisplay = doc.type || 'Documento'; // 'Documento' como fallback
+
+                return `
+                    <div class="document-item">
+                        <img src="${doc.fileUrl}" alt="Previsualización">
+                        <div class="document-item-info">
+                            <strong>Fecha:</strong> ${formattedDate} (${formattedTime})<br>
+                            <strong>Tipo:</strong> ${docTypeDisplay}
+                        </div>
+                        <a href="${doc.fileUrl}" download="${fileName}" class="download-link">
+                            <i data-feather="download" width="16" height="16"></i>
+                            Descargar
+                        </a>
+                    </div>
+                `;
+            }).join('');
+            
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        }
+
+        // --- Lógica de carga principal ---
+        document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const plate = urlParams.get('patente');
             
             const plateEl = document.getElementById('plate');
             const modelEl = document.getElementById('model');
             const driverEl = document.getElementById('driver');
-            const documentsContainer = document.getElementById('documents-container');
-
+            
             if (!plate) {
                 document.getElementById('truck-info').innerHTML = '<p>Error: No se especificó una patente.</p>';
                 return;
@@ -97,54 +214,35 @@
             const truck = trucks.find(t => t.plate === plate);
 
             if (truck) {
-                plateEl.textContent = truck.plate;
-                modelEl.textContent = truck.model || 'No registrado';
-                driverEl.textContent = truck.driver || 'No registrado';
+                if(plateEl) plateEl.textContent = truck.plate;
+                if(modelEl) modelEl.textContent = truck.model || 'No registrado';
+                if(driverEl) driverEl.textContent = truck.driver || 'No registrado';
             } else {
-                plateEl.textContent = plate;
-                modelEl.textContent = 'Camión no encontrado';
+                if(plateEl) plateEl.textContent = plate;
+                if(modelEl) modelEl.textContent = 'Camión no encontrado';
             }
 
-            // 2. Cargar y filtrar documentos
+            // 2. Cargar TODOS los documentos de localStorage
             const allDocuments = JSON.parse(localStorage.getItem('logitrack_documents')) || {};
-            let truckDocuments = [];
+            
+            // Reiniciar el array global
+            allTruckDocuments = [];
 
-            for (const dateKey in allDocuments) {
-                const docsForDay = allDocuments[dateKey];
-                const filteredDocs = docsForDay.filter(doc => doc.plate === plate);
-                truckDocuments.push(...filteredDocs);
-            }
+            // Iterar sobre cada día y agregar documentos si la patente coincide
+            Object.values(allDocuments).forEach(dayDocs => {
+                dayDocs.forEach(doc => {
+                    if (doc.plate === plate) {
+                        allTruckDocuments.push(doc);
+                    }
+                });
+            });
 
-            // 3. Renderizar los documentos
-            if (truckDocuments.length === 0) {
-                documentsContainer.innerHTML = '<p>Este camión no tiene documentos registrados.</p>';
-            } else {
-                truckDocuments.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                documentsContainer.innerHTML = truckDocuments.map(doc => {
-                    const docDate = new Date(doc.date);
-                    const formattedDate = docDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    const formattedTime = docDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                    const fileName = `doc_${doc.plate}_${docDate.toISOString().split('T')[0]}.png`;
-
-                    return `
-                        <div class="document-item">
-                            <img src="${doc.fileUrl}" alt="Previsualización">
-                            <div class="document-item-info">
-                                <strong>Fecha:</strong> ${formattedDate} (${formattedTime})<br>
-                                <strong>Tipo:</strong> ${doc.type}
-                            </div>
-                            <a href="${doc.fileUrl}" download="${fileName}" class="download-link">
-                                <i data-feather="download" width="16" height="16"></i>
-                                Descargar
-                            </a>
-                        </div>
-                    `;
-                }).join('');
-                
-                if (typeof feather !== 'undefined') {
-                    feather.replace();
-                }
+            // 3. Llamada inicial para renderizar todos los documentos
+            filterDocuments('all');
+            
+            // Activar íconos Feather (incluyendo los de los filtros)
+            if (typeof feather !== 'undefined') {
+                feather.replace();
             }
         });
     </script>

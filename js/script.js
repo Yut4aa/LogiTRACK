@@ -1,7 +1,7 @@
 /**
  * js/script.js
  * Script principal de la app (versión localStorage).
- * Maneja la navegación, el estado inicial y el logout (simulado).
+ * VERSIÓN ACTUALIZADA: Protege la ruta, muestra el saludo y limpia sesión.
  */
 
 // Variables globales
@@ -13,11 +13,10 @@ let currentDate = new Date();
  * @param {string} sectionId El ID de la sección a mostrar ('upload', 'calendar', 'vehicles').
  */
 function showSection(sectionId) {
-    // Comprobar si hay camiones antes de ir a 'subir' o 'calendario'
     const trucks = JSON.parse(localStorage.getItem('logitrack_trucks')) || [];
     if (trucks.length === 0 && (sectionId === 'upload' || sectionId === 'calendar')) {
         alert('Debe agregar al menos un camión para usar esta sección.');
-        showSection('vehicles'); // Forzar a la sección de vehículos
+        showSection('vehicles'); 
         return;
     }
 
@@ -33,51 +32,73 @@ function showSection(sectionId) {
 }
 
 /**
+ * Cierra la sesión (simulada) y redirige al login.
+ * VERSIÓN ACTUALIZADA: Limpia la sesión de localStorage.
+ */
+function logout() {
+    localStorage.removeItem('logitrack_session'); // Limpiar sesión
+    window.location.href = 'login.html';
+}
+
+/**
  * Habilita o deshabilita los botones de la barra lateral
  * basado en si existen camiones registrados.
  */
 function updateSidebarButtons() {
     const trucks = JSON.parse(localStorage.getItem('logitrack_trucks')) || [];
-    const btnUpload = document.getElementById('btn-upload');
-    const btnCalendar = document.getElementById('btn-calendar');
+    const uploadBtn = document.getElementById('btn-upload');
+    const calendarBtn = document.getElementById('btn-calendar');
     
-    const sharedStyle = (btn, enabled) => {
-        if (!btn) return;
-        btn.disabled = !enabled;
-        btn.style.opacity = enabled ? '1' : '0.5';
-        btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
-    };
-
-    const hasTrucks = trucks.length > 0;
-    sharedStyle(btnUpload, hasTrucks);
-    sharedStyle(btnCalendar, hasTrucks);
-    return hasTrucks;
+    if (trucks.length > 0) {
+        if (uploadBtn) uploadBtn.disabled = false;
+        if (calendarBtn) calendarBtn.disabled = false;
+    } else {
+        if (uploadBtn) uploadBtn.disabled = true;
+        if (calendarBtn) calendarBtn.disabled = true;
+    }
+    return trucks.length > 0;
 }
 
 /**
- * Simula un cierre de sesión y redirige a login.html.
+ * ==== NUEVA FUNCIÓN ====
+ * Muestra el mensaje de bienvenida en el sidebar.
  */
-function logout() {
-    if (confirm('¿Está seguro de que desea cerrar sesión?')) {
-        // En una app real, aquí se invalidaría un token.
-        // En esta simulación, solo redirigimos.
+function displayWelcomeMessage() {
+    const session = JSON.parse(localStorage.getItem('logitrack_session'));
+    const welcomeEl = document.getElementById('sidebar-welcome');
+
+    if (!session || !welcomeEl) {
+        // Si no hay sesión, proteger la página
+        alert('Debe iniciar sesión para acceder a la aplicación.');
         window.location.href = 'login.html';
+        return;
     }
+    
+    // Usar el nombre completo. Si no existe, usar el username.
+    const name = session.fullname || session.username || 'Usuario';
+    
+    // Dividir el nombre para mostrar solo el primero (opcional)
+    const firstName = name.split(' ')[0];
+    
+    welcomeEl.innerHTML = `Hola, <strong>${firstName}</strong>`;
 }
 
-/**
- * Inicialización de la aplicación
- */
+// --- Código principal (al cargar la página) ---
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar animaciones AOS
-    if (typeof AOS !== 'undefined') {
-        AOS.init({ duration: 800, easing: 'ease-in-out', once: true });
-    }
+    
+    // 1. Verificar sesión y mostrar saludo (ESTO ES NUEVO)
+    displayWelcomeMessage();
 
-    // Código de estrellas (asumo que existe en tu HTML)
+    // 2. Inicializar AOS (animaciones)
+    AOS.init({
+        duration: 800,
+        once: true
+    });
+
+    // 3. Crear estrellas (si el contenedor existe)
     const starsContainer = document.getElementById('stars-container');
     if (starsContainer) {
-        const starCount = 50;
+        const starCount = 50; 
         for (let i = 0; i < starCount; i++) {
             const star = document.createElement('div');
             star.classList.add('star');
@@ -96,12 +117,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Inicializar iconos Feather
+    // 4. Inicializar iconos Feather
     if (typeof feather !== 'undefined') {
         feather.replace();
     }
     
-    // Cargar datos (los scripts individuales se auto-ejecutan en DOMContentLoaded)
+    // 5. Cargar datos
     if (typeof renderCalendar === 'function') {
         renderCalendar();
     }
@@ -112,14 +133,13 @@ document.addEventListener('DOMContentLoaded', function() {
         populateTruckSelectForUpload();
     }
     
-    // Comprobar si hay camiones al cargar
+    // 6. Comprobar si hay camiones al cargar
     const hasTrucks = updateSidebarButtons();
     
-    // Decidir qué sección mostrar al inicio
+    // 7. Decidir qué sección mostrar al inicio
     if (!hasTrucks) {
-        alert('Bienvenido. Para comenzar, por favor registre su primer camión.');
         showSection('vehicles');
     } else {
-        showSection('upload');
+        showSection('upload'); // Mostrar 'upload' por defecto si hay camiones
     }
 });

@@ -20,17 +20,111 @@
             text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             position: relative;
         }
-        .qr-modal-content h3 { color: #333; } /* Arreglo para texto blanco */
+        .qr-modal-content h3 { color: #333; }
         .close-modal {
             position: absolute; top: 10px; right: 15px;
             font-size: 30px; font-weight: bold; cursor: pointer; color: #333;
         }
+        
+        /* Estilos para formulario limpio */
+        .upload-form .form-group { margin-bottom: 20px; text-align: left; }
+        .upload-form label { display: block; margin-bottom: 8px; font-weight: 500; color: #eee; }
+        .upload-form input[type="file"] { display: none; }
+        .upload-form .file-upload-label {
+            display: flex; align-items: center; justify-content: center;
+            padding: 12px 15px; background-color: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(255, 255, 255, 0.3); border-radius: 8px;
+            cursor: pointer; transition: all 0.2s ease; color: #f0f0f0;
+            height: 54px; box-sizing: border-box; 
+        }
+        .upload-form .file-upload-label:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-color, #007bff);
+        }
+        .upload-form .file-upload-label i { margin-right: 10px; width: 20px; }
+        .upload-form .form-group-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 15px; margin-bottom: 20px;
+        }
+        @media (max-width: 600px) {
+            .upload-form .form-group-grid { grid-template-columns: 1fr; }
+        }
+        .upload-form .form-group-grid .form-group { margin-bottom: 0; }
+        .upload-form .form-group-grid .form-group select {
+            width: 100%; height: 54px; box-sizing: border-box;
+        }
+        .upload-form button[type="submit"] {
+            display: inline-flex; align-items: center;
+            justify-content: center; gap: 8px; width: 100%;
+        }
+        
+        /* ==== ESTILOS MODIFICADOS (Tus 3 peticiones + 2 nuevas) ==== */
+        
+        /* 1. Logo en el Sidebar */
+        .sidebar-logo {
+            padding: 20px 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .sidebar-logo img {
+            height: 70px; /* Aumentado */
+            width: auto;
+            /* === NUEVO: Pintar el PNG de blanco === */
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        /* 1b. Arreglo: Ocultar logo cuando el sidebar colapsa */
+        @media (max-width: 768px) {
+            .sidebar-logo {
+                display: none;
+            }
+        }
+
+        /* 2. Saludo en el Main Content (Ahora solo "Hola, {nombre}") */
+        .logo-title {
+            display: flex;
+            justify-content: flex-start; /* Alinea a la izquierda (antes era space-between) */
+            align-items: center;
+            margin-top: 20px !important;
+        }
+        .logo-title img { display: none; }
+        
+        #sidebar-welcome {
+            font-size: 1.6em;
+            font-weight: 600;
+            color: #fff;
+            text-align: left;
+            line-height: 1.4;
+            flex-grow: 1; /* Hace que ocupe el espacio disponible */
+        }
+        #sidebar-welcome strong {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* === NUEVO: Quitar H1 "LogiTrack" de la derecha === */
+        .logo-title h1 {
+            display: none; /* Oculta completamente el H1 */
+        }
+        
+        /* 3. Arreglo: Añadir espacio para que la tarjeta no choque */
+        .main-content .section {
+            margin-top: 25px; 
+        }
+        /* ==== FIN DE ESTILOS MODIFICADOS ==== */
+        
     </style>
 </head>
 <body>
     <div id="particles-js"></div>
     <div class="app-container">
+        
         <div class="sidebar">
+            
+            <div class="sidebar-logo">
+                <img src="img/pngwing.com.png" alt="LogiTrack Logo">
+            </div>
+            
             <button id="btn-upload" onclick="showSection('upload')">
                 <i data-feather="upload"></i>
                 <span>Subir Factura</span>
@@ -50,24 +144,47 @@
         </div>
 
         <div class="main-content">
-            <div class="logo-title" data-aos="fade-down" style="margin-top: 20px;">
-                <img src="assets/images/logo.png" alt="LogiTrack Logo" class="logo-img" style="height: 60px;">
-                <h1>LogiTrack</h1>
-            </div>
-
+            
+            <div class="logo-title" data-aos="fade-down">
+                
+                <div id="sidebar-welcome">
+                    Hola, <strong>Usuario</strong> </div>
+                
+                </div>
             <div id="upload" class="section active">
                 <div class="card" data-aos="fade-up">
-                    <h2>Subir Factura o Devolución</h2>
+                    <h2>Subir Documento</h2>
                     <form class="upload-form" id="upload-form">
                         <div class="stars-container" id="stars-container"></div>
                         
-                        <label for="truck-plate-select">Seleccionar Camión:</label>
-                        <select id="truck-plate-select" required>
-                            <option value="">Primero debe agregar un camión</option>
-                        </select>
+                        <div class="form-group">
+                            <label for="truck-plate-select">Camión Asignado:</label>
+                            <select id="truck-plate-select" required>
+                                <option value="">Primero debe agregar un camión</option>
+                            </select>
+                        </div>
                         
-                        <input type="file" id="document-file" accept="image/*" required>
-                        <button type="submit" id="upload-submit-btn">Subir Documento</button>
+                        <div class="form-group-grid">
+                            <div class="form-group">
+                                <label for="document-file" class="file-upload-label">
+                                    <i data-feather="file-plus"></i>
+                                    <span id="file-name-display">Seleccionar Archivo</span>
+                                </label>
+                                <input type="file" id="document-file" accept="image/*" required>
+                            </div>
+
+                            <div class="form-group">
+                                <select id="document-type-select" required>
+                                    <option value="" disabled selected>Tipo de Documento...</option>
+                                    <option value="Factura">Factura</option>
+                                    <option value="Devolución">Devolución</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" id="upload-submit-btn">
+                            <i data-feather="upload-cloud"></i> Subir Documento
+                        </button>
                     </form>
                 </div>
             </div>
@@ -123,10 +240,11 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script src="js/particles-config.js"></script> <script src="js/script.js"></script> <script src="js/calendar.js"></script>
+    <script src="js/particles-config.js"></script> 
+    <script src="js/script.js"></script> 
+    <script src="js/calendar.js"></script>
     <script src="js/upload-form.js"></script>
     <script src="js/trucks.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </body>
 </html>

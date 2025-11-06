@@ -1,6 +1,9 @@
 /**
  * js/upload-form.js
  * Maneja la subida de documentos y el select de camiones (localStorage).
+ * VERSIÓN ACTUALIZADA: Guarda el tipo de documento (Factura/Devolución)
+ * y usa FileReader para que los datos persistan.
+ * Incluye lógica para el input de archivo personalizado.
  */
 
 /**
@@ -43,28 +46,28 @@ function handleUploadSubmit(event) {
 
     const submitButton = event.target.querySelector('button[type="submit"]');
     const plateSelect = document.getElementById('truck-plate-select');
-    const plate = plateSelect.value;
     const fileInput = document.getElementById('document-file');
-    const file = fileInput.files[0];
-    
-    if (!file) {
-        alert('Por favor, selecciona un archivo.');
-        return;
-    }
-    if (!plate) {
-        alert('Por favor, selecciona un camión de la lista.');
-        return;
-    }
-    
-    // --- CORRECCIÓN BUG DOBLE CLIC ---
-    submitButton.disabled = true;
-    submitButton.textContent = 'Subiendo...';
+    const typeSelect = document.getElementById('document-type-select');
 
-    // Simular carga (el createObjectURL es casi instantáneo)
-    setTimeout(() => {
-        // Generar una URL temporal (Blob) para la imagen
-        // Advertencia: Esta URL solo funciona mientras el navegador esté abierto.
-        const fileUrl = URL.createObjectURL(file);
+    const plate = plateSelect.value;
+    const file = fileInput.files[0];
+    const documentType = typeSelect.value;
+
+    if (!plate || !file || !documentType) {
+        alert('Por favor, complete todos los campos: camión, archivo y tipo de documento.');
+        return;
+    }
+    
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i data-feather="loader" class="spin"></i> Subiendo...';
+    feather.replace(); // Activar el icono de "loader"
+
+    // Usar FileReader para convertir la imagen a Data URL (texto base64)
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    
+    reader.onload = function() {
+        const fileUrl = reader.result;
         const today = new Date();
         const dateKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
         
@@ -76,15 +79,13 @@ function handleUploadSubmit(event) {
         
         documents[dateKey].push({
             plate: plate,
-            type: 'Factura/Devolución',
+            type: documentType, 
             fileUrl: fileUrl,
             date: today.toISOString()
         });
         
-        // Guardar los documentos actualizados
         localStorage.setItem('logitrack_documents', JSON.stringify(documents));
 
-        // Actualizar las vistas
         if (typeof renderCalendar === 'function') {
             renderCalendar();
         }
@@ -94,14 +95,28 @@ function handleUploadSubmit(event) {
         
         alert('Documento subido con éxito.');
         
-        // Limpiar formulario
+        // --- LIMPIEZA DE FORMULARIO ACTUALIZADA ---
         plateSelect.value = '';
         fileInput.value = '';
+        typeSelect.value = ''; 
+        
+        const fileNameDisplay = document.getElementById('file-name-display');
+        if (fileNameDisplay) {
+            fileNameDisplay.textContent = 'Seleccionar Archivo';
+        }
+        // --- FIN DE LIMPIEZA ---
 
-        // --- CORRECCIÓN BUG DOBLE CLIC ---
         submitButton.disabled = false;
-        submitButton.textContent = 'Subir Documento';
-    }, 300); // 300ms de demora simulada
+        submitButton.innerHTML = '<i data-feather="upload-cloud"></i> Subir Documento';
+        feather.replace(); // Reactivar icono original
+    };
+    
+    reader.onerror = function() {
+        alert('Error al leer el archivo.');
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i data-feather="upload-cloud"></i> Subir Documento';
+        feather.replace();
+    };
 }
 
 // Inicializar al cargar
@@ -110,5 +125,24 @@ document.addEventListener('DOMContentLoaded', function() {
     if (uploadForm) {
         uploadForm.addEventListener('submit', handleUploadSubmit);
     }
-    // La primera población del select la llama script.js
+    
+    if (typeof populateTruckSelectForUpload === 'function') {
+        populateTruckSelectForUpload();
+    }
+    
+    // --- NUEVO: Lógica para el input de archivo customizado ---
+    const fileInput = document.getElementById('document-file');
+    const fileNameDisplay = document.getElementById('file-name-display');
+    
+    if (fileInput && fileNameDisplay) {
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                // Mostrar solo el nombre del archivo
+                fileNameDisplay.textContent = fileInput.files[0].name;
+            } else {
+                fileNameDisplay.textContent = 'Seleccionar Archivo';
+            }
+        });
+    }
+    // --- Fin del nuevo bloque ---
 });

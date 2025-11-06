@@ -1,13 +1,13 @@
 /**
  * js/login.js
- * SIMULACIÓN de inicio de sesión.
- * No verifica un usuario real, solo anima y redirige.
+ * Maneja el inicio de sesión (versión localStorage).
+ * VERSIÓN ACTUALIZADA: Valida contra usuarios guardados y crea una sesión.
  */
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const loginButton = document.getElementById('loginButton');
 
-    function simulateLogin(event) {
+    function handleLogin(event) {
         event.preventDefault();
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
@@ -20,22 +20,40 @@ document.addEventListener('DOMContentLoaded', () => {
         loginButton.textContent = "Verificando...";
         loginButton.disabled = true;
         
-        // Simular una pequeña demora de red
+        // --- Lógica de validación ---
         setTimeout(() => {
-            loginButton.textContent = "✓ Acceso confirmado";
-            loginButton.style.backgroundColor = "#2e7d32";
+            const users = JSON.parse(localStorage.getItem('logitrack_users')) || [];
             
-            // Redireccionar a la app principal
-            setTimeout(() => {
-                window.location.href = "index.html"; 
-            }, 1000);
-        }, 1500);
+            // Buscar al usuario
+            const foundUser = users.find(user => user.username === username && user.password === password);
+            
+            if (foundUser) {
+                // ¡Éxito! Guardar sesión
+                localStorage.setItem('logitrack_session', JSON.stringify({
+                    username: foundUser.username,
+                    fullname: foundUser.fullname
+                }));
+                
+                loginButton.textContent = "✓ Acceso confirmado";
+                loginButton.style.backgroundColor = "#2e7d32";
+                
+                // Redireccionar a la app principal
+                setTimeout(() => {
+                    window.location.href = "index.html"; 
+                }, 1000);
+                
+            } else {
+                // Falla
+                alert('Usuario o contraseña incorrectos.');
+                loginButton.textContent = "Iniciar Sesión";
+                loginButton.disabled = false;
+            }
+        }, 1000); // Simular demora de red
     }
 
-    if (loginForm) loginForm.addEventListener('submit', simulateLogin);
-    if (loginButton) loginButton.addEventListener('click', simulateLogin);
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
     
-    // Efectos de focus en los campos
+    // Efectos de focus (sin cambios)
     const inputs = document.querySelectorAll('input');
     inputs.forEach(input => {
         input.addEventListener('focus', () => {
